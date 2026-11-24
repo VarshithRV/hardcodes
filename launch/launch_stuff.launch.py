@@ -1,0 +1,551 @@
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.substitutions import (
+    Command,
+    FindExecutable,
+    LaunchConfiguration,
+    PathJoinSubstitution,
+)
+
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+from launch_ros.parameter_descriptions import ParameterValue
+
+import os
+import math
+
+
+def launch_setup(context, *args, **kwargs):
+    description_package = LaunchConfiguration("description_package")
+    description_file = LaunchConfiguration("description_file")
+    moveit_config_package = LaunchConfiguration("moveit_config_package")
+    moveit_config_file = LaunchConfiguration("moveit_config_file")
+    use_sim_time = LaunchConfiguration("use_sim_time")
+    
+    # left_translation = [-0.51,0.529,0.00]
+    # right_translation = [0.51,0.529,0.00]
+
+    left_translation = [-0.46,0.529,0.00]
+    right_translation = [0.46,0.529,0.00]
+    
+    # left_translation = [-0.585,0.529,0.00]
+    # right_translation = [0.585,0.529,0.00]
+    
+    left_rotation = [0.0,0.0,math.pi/2]
+    right_rotation = [0.0,0.0,math.pi/2]
+    
+    left_tool0 = [0.0,0.0,0.189]
+    right_tool0 = [0.0,0.0,0.175]
+
+    left_ur_type = LaunchConfiguration("left_ur_type")
+    left_safety_limits = LaunchConfiguration("left_safety_limits")
+    left_safety_pos_margin = LaunchConfiguration("left_safety_pos_margin")
+    left_safety_k_position = LaunchConfiguration("left_safety_k_position")
+    left_kinematics_params_file = LaunchConfiguration("left_kinematics_params_file")
+    
+    left_joint_limit_params = PathJoinSubstitution([FindPackageShare(description_package), "config", left_ur_type, "joint_limits.yaml"])
+    left_physical_params = PathJoinSubstitution([FindPackageShare(description_package), "config", left_ur_type, "physical_parameters.yaml"])
+    left_visual_params = PathJoinSubstitution([FindPackageShare(description_package), "config", left_ur_type, "visual_parameters.yaml"])
+
+    right_ur_type = LaunchConfiguration("right_ur_type")
+    right_safety_limits = LaunchConfiguration("right_safety_limits")
+    right_safety_pos_margin = LaunchConfiguration("right_safety_pos_margin")
+    right_safety_k_position = LaunchConfiguration("right_safety_k_position")
+    right_kinematics_params_file = LaunchConfiguration("right_kinematics_params_file")
+    
+    right_joint_limit_params = PathJoinSubstitution([FindPackageShare(description_package), "config", right_ur_type, "joint_limits.yaml"])
+    right_physical_params = PathJoinSubstitution([FindPackageShare(description_package), "config", right_ur_type, "physical_parameters.yaml"])
+    right_visual_params = PathJoinSubstitution([FindPackageShare(description_package), "config", right_ur_type, "visual_parameters.yaml"])
+
+    robot_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            " ",
+            PathJoinSubstitution([FindPackageShare(description_package), "urdf", description_file]),
+            " ",
+            "name:=dual_arm_workcell",
+            " ",
+            "left_robot_ip:=xxx.yyy.zzz.www",
+            " ",
+            "left_tf_prefix:=left_",
+            " ",
+            "left_joint_limit_params:=",
+            left_joint_limit_params,
+            " ",
+            "left_kinematics_params:=",
+            left_kinematics_params_file,
+            " ",
+            "left_physical_params:=",
+            left_physical_params,
+            " ",
+            "left_visual_params:=",
+            left_visual_params,
+            " ",
+            "left_safety_limits:=",
+            left_safety_limits,
+            " ",
+            "left_safety_pos_margin:=",
+            left_safety_pos_margin,
+            " ",
+            "left_safety_k_position:=",
+            left_safety_k_position,
+            " ",
+            "left_name:=",
+            "left_ur16e",
+            " ",
+            "left_script_filename:=",
+            "ros_control.urscript",
+            " ",
+            "left_input_recipe_filename:=",
+            "rtde_input_recipe.txt",
+            " ",
+            "left_output_recipe_filename:=",
+            "rtde_output_recipe.txt",
+            " ",
+            "left_tool0_x:=",
+            str(left_tool0[0]),
+            " ",
+            "left_tool0_y:=",
+            str(left_tool0[1]),
+            " ",
+            "left_tool0_z:=",
+            str(left_tool0[2]),
+            " ",
+            "left_translation_x:=",
+            # "-0.46", # home
+            # "-0.585", # create
+            str(left_translation[0]),
+            " ",
+            "left_translation_y:=",
+            str(left_translation[1]),
+            " ",
+            "left_translation_z:=",
+            str(left_translation[2]),
+            " ",
+            "left_rotation_r:=",
+            str(left_rotation[0]),
+            " ",
+            "left_rotation_p:=",
+            str(left_rotation[1]),
+            " ",
+            "left_rotation_y:=",
+            str(left_rotation[2]),
+            " ",
+            "right_robot_ip:=xxx.yyy.zzz.www",
+            " ",
+            "right_tf_prefix:=right_",
+            " ",
+            "right_joint_limit_params:=",
+            right_joint_limit_params,
+            " ",
+            "right_kinematics_params:=",
+            right_kinematics_params_file,
+            " ",
+            "right_physical_params:=",
+            right_physical_params,
+            " ",
+            "right_visual_params:=",
+            right_visual_params,
+            " ",
+            "right_safety_limits:=",
+            right_safety_limits,
+            " ",
+            "right_safety_pos_margin:=",
+            right_safety_pos_margin,
+            " ",
+            "right_safety_k_position:=",
+            right_safety_k_position,
+            " ",
+            "right_name:=",
+            "right_ur16e",
+            " ",
+            "right_script_filename:=",
+            "ros_control.urscript",
+            " ",
+            "right_input_recipe_filename:=",
+            "rtde_input_recipe.txt",
+            " ",
+            "right_output_recipe_filename:=",
+            "rtde_output_recipe.txt",
+            " ",
+            "right_tool0_x:=",
+            str(right_tool0[0]),
+            " ",
+            "right_tool0_y:=",
+            str(right_tool0[1]),
+            " ",
+            "right_tool0_z:=",
+            str(right_tool0[2]),
+            " ",
+            "right_translation_x:=",
+            # "-0.46", # home
+            # "-0.585", # create
+            str(right_translation[0]),
+            " ",
+            "right_translation_y:=",
+            str(right_translation[1]),
+            " ",
+            "right_translation_z:=",
+            str(right_translation[2]),
+            " ",
+            "right_rotation_r:=",
+            str(right_rotation[0]),
+            " ",
+            "right_rotation_p:=",
+            str(right_rotation[1]),
+            " ",
+            "right_rotation_y:=",
+            str(right_rotation[2]),
+            " ",
+        ]
+    )
+
+    robot_description = {
+        "robot_description": ParameterValue(value=robot_description_content, value_type=str)
+    }
+
+    # robot_description and param moveit param initialization is finished, now moveit config preparation needs to be done
+    # moveit config stuff
+    robot_description_semantic_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            " ",
+            PathJoinSubstitution(
+                [FindPackageShare(moveit_config_package), "config", moveit_config_file]
+            )
+        ]
+    )
+    robot_description_semantic = {
+        "robot_description_semantic": ParameterValue(value=robot_description_semantic_content,value_type=str)
+    }
+
+    robot_description_kinematics = {
+    "robot_description_kinematics": {
+        "left_ur16e": {
+            "kinematics_solver": "kdl_kinematics_plugin/KDLKinematicsPlugin",
+            "kinematics_solver_attempts": 3,
+            "kinematics_solver_search_resolution": 0.005,
+            "kinematics_solver_timeout": 0.005,
+        },
+        "right_ur16e": {
+            "kinematics_solver": "kdl_kinematics_plugin/KDLKinematicsPlugin",
+            "kinematics_solver_attempts": 3,
+            "kinematics_solver_search_resolution": 0.005,
+            "kinematics_solver_timeout": 0.005,
+        }
+    }}
+
+    #### nodes
+    left_preaction_server = Node(
+        package="motion_planning_abstractions",
+        executable="predefined_state_server",
+        name="left_preaction_server",
+        output="screen",
+        parameters=[
+            robot_description,
+            robot_description_semantic,
+            robot_description_kinematics,
+            {
+                "planning_group": "left_ur16e",
+                "shoulder_pan": -3.9176607767688196,
+                "shoulder_lift": -1.245649353866913,
+                "elbow": 1.845574680958883,
+                "wrist_1": -0.8931537431529541,
+                "wrist_2": -0.46324092546571904,
+                "wrist_3": 0.24232390522956848,
+                "side": "left",
+            },
+            {"use_sim_time": use_sim_time},
+        ],
+    )
+
+    right_preaction_server = Node(
+        package="motion_planning_abstractions",
+        executable="predefined_state_server",
+        name="right_preaction_server",
+        output="screen",
+        parameters=[
+            robot_description,
+            robot_description_semantic,
+            robot_description_kinematics,
+            {
+                "planning_group": "right_ur16e",
+                "shoulder_pan": 0.15968317804148882,
+                "shoulder_lift": -1.247802739692411,
+                "elbow": -1.9956461569496642,
+                "wrist_1": -1.1175868831372546,
+                "wrist_2": 1.5685058669109873,
+                "wrist_3": -2.958524343639371,
+                "side": "right",
+            },
+            {"use_sim_time": use_sim_time},
+        ],
+    )
+
+    apriltag_grid_detector = Node(
+        package="apriltag_grid_detector",
+        executable="apriltag_grid_detector",
+        name="apriltag_grid_detector",
+        output="screen",
+        parameters=[
+            robot_description,
+            {
+                "alpha": 0.9,
+                "marker_separation": 2.5,  # mm
+                "marker_size": 25.0,        # mm
+                "object.name": "object0",
+                # 2 rows x 2 cols, flattened [row0, row1, ...]
+                "grid.rows": 2,
+                "grid.cols": 2,
+                "grid.ids": [9, 10, 11, 12],
+                "color_image_topic": "/camera/left_camera/color/image_raw",
+                "camera_info_topic": "/camera/left_camera/color/camera_info",
+                "depth_image_topic": "/camera/left_camera/depth/image_rect_raw",
+                "detection_rate": 30.0,
+            }
+        ],
+    )
+
+    get_object_ir_data_node = Node(
+        package="hardcodes",
+        executable="get_object_ir_data",
+        name="get_object_ir_data",
+        output="screen",
+        parameters=[
+            robot_description,
+            robot_description_semantic,
+            robot_description_kinematics,
+            {"use_sim_time": use_sim_time},
+            {
+                "servo_node_ns": "/right_servo_node_main",
+                "joint_traj_controller": "right_scaled_joint_trajectory_controller",
+                "joint_vel_controller": "right_forward_velocity_controller",
+                "alpha":0.8,
+            }
+        ],
+    )
+
+    left_task_space_cubic_polynomial_trajectory_server = Node(
+        package="motion_planning_abstractions",
+        executable="task_space_cubic_polynomial_trajectory_server",
+        name="left_task_space_cubic_polynomial_trajectory_server",
+        output="screen",
+        parameters=[
+            robot_description,
+            robot_description_semantic,
+            robot_description_kinematics,
+            {
+                "planning_group" : "left_ur16e",
+                "maximum_task_space_velocity" : 1.0,
+                "maximum_task_space_acceleration" : 3.0,
+                "maximum_joint_space_velocity" : 3.15,
+                "maximum_joint_space_acceleration" : 3.14,
+                "joint_prefix" : "left_",
+                "joint_trajectory_controller" : "left_scaled_joint_trajectory_controller",
+                "endeffector_link" : "left_tool0",
+            },
+            {"use_sim_time":use_sim_time},
+        ],
+    )
+    
+    right_task_space_cubic_polynomial_trajectory_server = Node(
+        package="motion_planning_abstractions",
+        executable="task_space_cubic_polynomial_trajectory_server",
+        name="right_task_space_cubic_polynomial_trajectory_server",
+        output="screen",
+        parameters=[
+            robot_description,
+            robot_description_semantic,
+            robot_description_kinematics,
+            {
+                "planning_group_" : "right_ur16e",
+                "maximum_task_space_velocity_" : 1.0,
+                "maximum_task_space_acceleration_" : 3.0,
+                "maximum_joint_space_velocity_" : 3.15,
+                "maximum_joint_space_acceleration_" : 3.14,
+                "joint_prefix" : "right_",
+                "joint_trajectory_controller_" : "right_scaled_joint_trajectory_controller",
+                "endeffector_link_" : "right_tool0",
+            },
+            {"use_sim_time":use_sim_time},
+        ],
+    )
+
+
+    nodes_to_start = [
+        left_preaction_server,
+        right_preaction_server,
+        apriltag_grid_detector,
+        # handover_node,
+        # handover_node_2,
+        get_object_ir_data_node,
+        left_task_space_cubic_polynomial_trajectory_server,
+        right_task_space_cubic_polynomial_trajectory_server,
+    ]
+    
+    return nodes_to_start
+
+
+def generate_launch_description():
+    
+    declared_arguments = []
+
+    # general arguments (used in launch_setup)
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "moveit_config_package",
+            default_value="dual_arm_workcell_moveit_config",
+            description="dual_arm_workcell_moveit_config",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "moveit_config_file",
+            default_value="dual_arm_workcell.srdf",
+            description="MoveIt SRDF file.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_sim_time",
+            default_value="false",
+            description="Use simulation (Gazebo) clock if true.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "description_package",
+            default_value="dual_arm_workcell_description",
+            description="Description package with robot URDF/XACRO files. Usually the argument "
+            "is not set, it enables use of a custom description.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "description_file",
+            default_value="dual_arm_workcell.urdf.xacro",
+            description="URDF/XACRO description file with the robot.",
+        )
+    )
+
+    # left robot arguments (used in launch_setup)
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "left_ur_type",
+            description="Type/series of used UR robot.",
+            choices=[
+                "ur3",
+                "ur5",
+                "ur10",
+                "ur3e",
+                "ur5e",
+                "ur7e",
+                "ur10e",
+                "ur12e",
+                "ur16e",
+                "ur8long",
+                "ur15",
+                "ur18",
+                "ur20",
+                "ur30",
+            ],
+            default_value="ur16e",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "left_safety_limits",
+            default_value="true",
+            description="Enables the safety limits controller if true.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "left_safety_pos_margin",
+            default_value="0.15",
+            description="The margin to lower and upper limits in the safety controller.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "left_safety_k_position",
+            default_value="20",
+            description="k-position factor in the safety controller.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "left_kinematics_params_file",
+            default_value=PathJoinSubstitution(
+                [
+                    FindPackageShare(LaunchConfiguration("description_package")),
+                    "config",
+                    LaunchConfiguration("left_ur_type"),
+                    "left_default_kinematics.yaml",
+                ]
+            ),
+            description="The calibration configuration of the actual left robot used.",
+        )
+    )
+
+    # right robot arguments (used in launch_setup)
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "right_ur_type",
+            description="Type/series of used UR robot.",
+            choices=[
+                "ur3",
+                "ur5",
+                "ur10",
+                "ur3e",
+                "ur5e",
+                "ur7e",
+                "ur10e",
+                "ur12e",
+                "ur16e",
+                "ur8long",
+                "ur15",
+                "ur18",
+                "ur20",
+                "ur30",
+            ],
+            default_value="ur16e",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "right_safety_limits",
+            default_value="true",
+            description="Enables the safety limits controller if true.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "right_safety_pos_margin",
+            default_value="0.15",
+            description="The margin to lower and upper limits in the safety controller.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "right_safety_k_position",
+            default_value="20",
+            description="k-position factor in the safety controller.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "right_kinematics_params_file",
+            default_value=PathJoinSubstitution(
+                [
+                    FindPackageShare(LaunchConfiguration("description_package")),
+                    "config",
+                    LaunchConfiguration("right_ur_type"),
+                    "right_default_kinematics.yaml",
+                ]
+            ),
+            description="The calibration configuration of the actual right robot used.",
+        )
+    )
+    
+    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])

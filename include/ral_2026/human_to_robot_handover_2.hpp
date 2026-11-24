@@ -1,0 +1,148 @@
+// header for the handover class
+#ifndef HANDOVER_HPP
+#define HANDOVER_HPP
+
+#include <functional>
+#include <memory>
+#include <chrono>
+#include "rclcpp/rclcpp.hpp"
+#include "std_srvs/srv/trigger.hpp"
+#include "geometry_msgs/msg/twist.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "motion_planning_abstractions/ee_servo.hpp"
+#include "motion_planning_abstractions/dual_arm_waypoint_programming.hpp"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
+using namespace std::chrono_literals;
+
+class Handover
+{
+    public:
+        // constructor
+        Handover(rclcpp::Node::SharedPtr node);
+
+        // handover function
+        bool handover();
+    
+    private:
+        // node
+        rclcpp::Node::SharedPtr node_;
+        
+        // helper objects
+        std::shared_ptr<EEServo> ee_servo_handle_;
+        std::shared_ptr<DualArmControlInterface> dual_arm_control_interface_;
+
+        // cb groups
+        rclcpp::CallbackGroup::SharedPtr parallel_cb_group_;
+        rclcpp::CallbackGroup::SharedPtr mex_cb_group_;
+        
+        // services
+        rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr handover_server_;
+
+        // subscribers
+        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr object0_filtered_pose_subscriber_;
+
+        // publishers
+        rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr via_point_pose_publisher_;
+        rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr grasp_pose_publisher_;
+        
+        // timers
+        rclcpp::TimerBase::SharedPtr state_pose_publisher_timer_;
+        rclcpp::TimerBase::SharedPtr ee_velocity_calculator_timer_;
+
+        std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+        std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+
+        // clock
+        rclcpp::Clock clock_;
+
+        // // DATA
+
+        // velocity filter coeff        
+        double linear_velocity_filter_alpha = 0.5;
+        
+        // OBJECT STATE ESTIMATION DATA
+        // grasp state, pose and velocity
+        bool object_pose_received=false;
+        Eigen::Vector3d grasp_position;
+        std::vector<Eigen::Vector3d> grasp_position_window;
+        std::vector<double> grasp_position_timestamp_window;
+        Eigen::Quaterniond grasp_orientation = Eigen::Quaterniond(1,0,0,0);
+        Eigen::Vector3d grasp_linear_velocity;
+        Eigen::Vector3d grasp_filtered_linear_velocity;
+        Eigen::AngleAxisd grasp_angular_velocity;
+        // via point state, pose and velocity
+        Eigen::Vector3d via_point_position;
+        std::vector<Eigen::Vector3d> via_point_position_window;
+        std::vector<double> via_point_position_timestamp_window;
+        Eigen::Quaterniond via_point_orientation= Eigen::Quaterniond(1,0,0,0);
+        Eigen::Vector3d via_point_linear_velocity;
+        Eigen::Vector3d via_point_filtered_linear_velocity;
+        Eigen::AngleAxisd via_point_angular_velocity;
+        // ee velocity 
+        Eigen::Vector3d ee_linear_velocity=Eigen::Vector3d::Zero();
+        std::vector<Eigen::Vector3d> ee_position_window;
+        // state window size
+        int state_window_size = 5;
+        // object to grasp transform
+        Eigen::Vector3d object_to_grasp_position_transform = Eigen::Vector3d(0.04,-0.01,-0.03);
+        Eigen::Quaterniond object_to_grasp_orientation_transform = Eigen::Quaterniond(Eigen::AngleAxisd(M_PI/2,Eigen::Vector3d::UnitY()));
+        Eigen::Vector3d grasp_to_via_point_position_transform = Eigen::Vector3d(0.0,0.0,-0.17);
+        // via point speed 
+        double via_point_speed = 0.1; //ms-1
+
+        // arm control data
+        double approach_phase_duration = 3.0;
+
+        double P = 1.0;
+
+        // helper function to set velocity
+        void set_velocity(Eigen::Vector<double,3> linear_velocity, Eigen::AngleAxisd angular_velocity);
+        void process_object_pose(geometry_msgs::msg::PoseStamped::SharedPtr msg);
+        Eigen::Vector3d filter_linear_velocity(Eigen::Vector<double,3> filtered_linear_velocity, Eigen::Vector<double,3> linear_velocity);
+        void state_pose_publisher_cb_();
+        Eigen::Matrix<double,4,3> get_coeffs(
+            Eigen::Vector3d initial_position, 
+            Eigen::Vector3d final_position, 
+            Eigen::Vector3d initial_velocity, 
+            Eigen::Vector3d final_velocity, 
+            double duration
+        );
+        Eigen::Vector3d get_linear_vel_from_coeffs(Eigen::Matrix<double,4,3>coeff_matrix, double tau);
+        Eigen::Vector3d get_angular_vel(Eigen::Quaterniond setpoint, Eigen::Quaterniond current);
+        void get_ee_linear_vel();
+        double f(double duration,int n, double delta_t); // function over traj duration
+        double g(double delta_t); // function over velocity inference instant
+        Eigen::Vector3d k(Eigen::Vector3d vel_setpoint); // function over output velocity
+        
+        Eigen::Vector3d previous_velocity_command = Eigen::Vector3d::Zero();
+        
+        void MPC_go_to_state(double approach_duration,Eigen::Vector3d final_position,Eigen::Vector3d final_velocity, Eigen::Quaterniond final_orientation);
+        
+        void MPC_go_to_approach_state(double approach_duration);
+        
+        Eigen::Vector3d solve_mpc_velocity_setpoint(
+            const Eigen::Vector3d& current_position,
+            const Eigen::Vector3d& current_velocity,
+            const Eigen::Vector3d& target_position,
+            const Eigen::Vector3d& target_velocity,
+            double dt
+        );
+        Eigen::Vector3d clamp_norm(const Eigen::Vector3d& v, double max_norm);
+        Eigen::Matrix<double, 3, Eigen::Dynamic> project_velocity_constraints(
+            const Eigen::Matrix<double, 3, Eigen::Dynamic>& U,
+            const Eigen::Vector3d& previous_velocity,
+            double dt
+        );
+        void left_gripper_on();
+        void left_gripper_off();
+        void left_gripper_neutral();
+        void right_gripper_on();
+        void right_gripper_off();
+        void right_gripper_neutral();
+        bool set_io_sync(rclcpp::Client<ur_msgs::srv::SetIO>::SharedPtr client,int8_t pin,float state);
+};
+
+#endif
