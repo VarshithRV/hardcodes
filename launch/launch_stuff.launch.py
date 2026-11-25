@@ -375,9 +375,7 @@ def launch_setup(context, *args, **kwargs):
     nodes_to_start = [
         left_preaction_server,
         right_preaction_server,
-        apriltag_grid_detector,
-        # handover_node,
-        # handover_node_2,
+        # apriltag_grid_detector,
         get_object_ir_data_node,
         left_task_space_cubic_polynomial_trajectory_server,
         right_task_space_cubic_polynomial_trajectory_server,

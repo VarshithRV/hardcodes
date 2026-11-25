@@ -12,16 +12,34 @@
 int main(int argc, char**argv){
     
     rclcpp::init(argc,argv);
+    
     rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("get_object_ir_data");
+    
     auto daci = std::make_shared<DualArmControlInterface>(node);
     
-    auto server = [daci](
+    auto server = [node,daci](
         std_srvs::srv::Trigger::Request::SharedPtr req, 
         std_srvs::srv::Trigger::Response::SharedPtr res
     ){
-        daci->move_to_joint_positions(std::vector<double>{
-            0.0,0.0,0.0,0.0,0.0,0.0
-        },daci->left_move_group_interface_);
+        daci->move_to_joint_positions(
+            std::vector<double>{
+                0.0,
+                -1.26797,
+                -2.32253,
+                -2.78958,
+                -1.62478,
+                1.56858
+            },
+            daci->right_move_group_interface_
+        );
+
+        // auto curr_js = daci->get_current_joint_state("left");
+        // for(int i=0; i<curr_js.size(); i++){
+        //     std::cout<<curr_js[i]<<std::endl;
+        // }
+
+        // float H = 0.35;// scanning at 35cm height
+
         
         res->success = true;
         res->message = "muahahahaha!";
