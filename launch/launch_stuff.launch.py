@@ -34,8 +34,11 @@ def launch_setup(context, *args, **kwargs):
     left_rotation = [0.0,0.0,math.pi/2]
     right_rotation = [0.0,0.0,math.pi/2]
     
-    left_tool0 = [0.0,0.0,0.189]
-    right_tool0 = [0.0,0.0,0.175]
+    # left_tool0 = [0.0,0.0,0.189] # tiens gripper for hrh
+    # right_tool0 = [0.0,0.0,0.175] # tiens gripper for hrh
+
+    left_tool0 = [0.0,0.0,0.0] # wrist_3_link
+    right_tool0 = [0.0,0.0,0.0] # wrist_3_link
 
     left_ur_type = LaunchConfiguration("left_ur_type")
     left_safety_limits = LaunchConfiguration("left_safety_limits")
@@ -373,9 +376,9 @@ def launch_setup(context, *args, **kwargs):
 
 
     nodes_to_start = [
-        left_preaction_server,
-        right_preaction_server,
-        # apriltag_grid_detector,
+        # left_preaction_server,
+        # right_preaction_server,
+        apriltag_grid_detector,
         get_object_ir_data_node,
         left_task_space_cubic_polynomial_trajectory_server,
         right_task_space_cubic_polynomial_trajectory_server,

@@ -6,6 +6,7 @@ scripts/lib/
 scripts/lib64
 scripts/bin/
 pyvenv.cfg
+data/
 
 *.db3
 *.mat
